@@ -104,7 +104,7 @@ def main(
             return make_env(bp, param_update_interval=ui, custom_bounds=cb)
         return _init
 
-    env = SubprocVecEnv([
+    env = DummyVecEnv([
         make_env_fn(base_path, update_interval, custom_bounds)
         for _ in range(num_cpus)
     ])
