@@ -114,9 +114,9 @@ def main(
     )
     os.makedirs(save_path, exist_ok=True)
 
-    print("Checking environment...")
-    if hasattr(env, 'envs'):
-        check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
+    # print("Checking environment...")
+    # if hasattr(env, 'envs'):
+    #     check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
     lr = 3e-4
     # n_steps = 2048
     batch_size = 64
