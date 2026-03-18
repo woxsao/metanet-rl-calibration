@@ -86,6 +86,7 @@ def main(
     update_interval=1,
     base_model_dir=None,
     save_dir=None,
+    num_cpus = 8
 ):
     custom_bounds = None
     if save_dir is not None and os.path.exists(save_dir + "/bounds.json"):
@@ -96,18 +97,17 @@ def main(
         print("Using custom parameter bounds from bounds.json:")
         custom_bounds = floatify_bounds(custom_bounds)
         print(custom_bounds)
-    num_cpus = os.cpu_count()
+
     n_steps = 2048 // num_cpus  # keep total rollout size fixed
-    env = SubprocVecEnv(
-        [
-            lambda: make_env(
-                base_path,
-                param_update_interval=update_interval,
-                custom_bounds=custom_bounds,
-            )
-            for _ in range(num_cpus)
-        ]
-    )
+    def make_env_fn(bp, ui, cb):
+        def _init():
+            return make_env(bp, param_update_interval=ui, custom_bounds=cb)
+        return _init
+
+    env = SubprocVecEnv([
+        make_env_fn(base_path, update_interval, custom_bounds)
+        for _ in range(num_cpus)
+    ])
 
     save_path = (
         save_dir if save_dir is not None else f"metanet_sb3_ppo_model_{total_timesteps}"
@@ -115,7 +115,8 @@ def main(
     os.makedirs(save_path, exist_ok=True)
 
     print("Checking environment...")
-    check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
+    if hasattr(env, 'envs'):
+        check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
     lr = 3e-4
     # n_steps = 2048
     batch_size = 64
@@ -214,4 +215,5 @@ if __name__ == "__main__":
         args.update_interval,
         args.base_model_dir,
         args.save_dir,
+        args.num_cpus,
     )
