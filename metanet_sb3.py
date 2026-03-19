@@ -86,7 +86,8 @@ def main(
     update_interval=1,
     base_model_dir=None,
     save_dir=None,
-    num_cpus = 8
+    num_cpus = 8,
+    tensorboard_log="./metanet_sb3_tensorboard/"
 ):
     custom_bounds = None
     if save_dir is not None and os.path.exists(save_dir + "/bounds.json"):
@@ -130,7 +131,7 @@ def main(
     if base_model_dir is not None:
         print(f"Loading model from {base_model_dir}...")
         model = PPO.load(
-            base_model_dir, env=env, tensorboard_log="./metanet_sb3_tensorboard/"
+            base_model_dir, env=env, tensorboard_log=tensorboard_log
         )
     else:
         model = PPO(
@@ -147,7 +148,7 @@ def main(
             # policy_kwargs=dict(
             #     net_arch=dict(pi=[256, 256], vf=[256, 256])  # CORRECT: just the dict
             # ),
-            tensorboard_log="./metanet_sb3_tensorboard/",
+            tensorboard_log=tensorboard_log,
         )
 
     training_metadata["learning_rate"] = lr
@@ -222,4 +223,5 @@ if __name__ == "__main__":
         args.base_model_dir,
         args.save_dir,
         args.num_cpus,
+        args.tensorboard_log,
     )
