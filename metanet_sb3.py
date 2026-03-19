@@ -100,14 +100,14 @@ def main(
         custom_bounds = floatify_bounds(custom_bounds)
         print(custom_bounds)
 
-    n_steps = 2048 // num_cpus  # keep total rollout size fixed
+    n_steps = 2048  # keep total rollout size fixed
     def make_env_fn(bp, ui, cb, bc_noise_std=0.02, bc_smoothness=0.97):
         def _init():
             return make_env(bp, param_update_interval=ui, custom_bounds=cb, bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, perturb_bc=perturb_bc)
         return _init
 
     env = SubprocVecEnv([
-        make_env_fn(base_path, update_interval, custom_bounds)
+        make_env_fn(base_path, update_interval, custom_bounds, bc_noise_std, bc_smoothness)
         for _ in range(num_cpus)
     ])
 
@@ -121,7 +121,7 @@ def main(
     #     check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
     lr = 3e-4
     # n_steps = 2048
-    batch_size = 64
+    batch_size = 512
     n_epochs = 10
     gamma = 0.999
     gae_lambda = 0.95
