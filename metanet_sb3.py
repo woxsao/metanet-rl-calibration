@@ -11,7 +11,7 @@ import os
 training_metadata = {}
 
 
-def make_env(base_path, param_update_interval=1, custom_bounds=None):
+def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None):
     rho_hat = np.load(base_path + "/rho_hat.npy")
     q_hat = np.load(base_path + "/q_hat.npy")
     lane_mapping = np.load(base_path + "/lane_mapping.npy")[1:-1]
@@ -47,8 +47,6 @@ def make_env(base_path, param_update_interval=1, custom_bounds=None):
             v_hat[rho_hat == 0] = 0.0
 
     init_traffic_state = (rho_hat[0, :], v_hat[0, :], upstream_flow[0], 0)
-    bc_noise_std = 0.02
-    bc_smoothness = 0.97
     param_update_interval = param_update_interval
     training_metadata["bc_noise_std"] = bc_noise_std
     training_metadata["bc_smoothness"] = bc_smoothness
@@ -87,7 +85,9 @@ def main(
     base_model_dir=None,
     save_dir=None,
     num_cpus = 8,
-    tensorboard_log="./metanet_sb3_tensorboard/"
+    tensorboard_log="./metanet_sb3_tensorboard/",
+    bc_smoothness=0.97,
+    bc_noise_std=0.02,
 ):
     custom_bounds = None
     if save_dir is not None and os.path.exists(save_dir + "/bounds.json"):
@@ -100,9 +100,9 @@ def main(
         print(custom_bounds)
 
     n_steps = 2048 // num_cpus  # keep total rollout size fixed
-    def make_env_fn(bp, ui, cb):
+    def make_env_fn(bp, ui, cb, bc_noise_std=0.02, bc_smoothness=0.97):
         def _init():
-            return make_env(bp, param_update_interval=ui, custom_bounds=cb)
+            return make_env(bp, param_update_interval=ui, custom_bounds=cb, bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness)
         return _init
 
     env = SubprocVecEnv([
@@ -213,6 +213,18 @@ if __name__ == "__main__":
         default="./metanet_sb3_tensorboard/",
         help="Directory for tensorboard logs",
     )
+    parser.add_argument(
+        "--bc_smoothness",
+        type=float,
+        default=0.97,
+        help="Smoothness factor for boundary condition perturbations (0-1, higher is smoother)",
+    )
+    parser.add_argument(
+        "--bc_noise_std",
+        type=float,
+        default=0.02,
+        help="Standard deviation of noise added to boundary conditions at each timestep",
+    )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
 
@@ -224,4 +236,6 @@ if __name__ == "__main__":
         args.save_dir,
         args.num_cpus,
         args.tensorboard_log,
+        args.bc_smoothness,
+        args.bc_noise_std,
     )
