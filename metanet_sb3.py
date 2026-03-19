@@ -104,7 +104,7 @@ def main(
             return make_env(bp, param_update_interval=ui, custom_bounds=cb)
         return _init
 
-    env = DummyVecEnv([
+    env = SubprocVecEnv([
         make_env_fn(base_path, update_interval, custom_bounds)
         for _ in range(num_cpus)
     ])
@@ -206,7 +206,13 @@ if __name__ == "__main__":
         help="Directory to save results (learned parameters, simulation outputs)",
     )
     parser.add_argument("--num_cpus", type=int, default=os.cpu_count())
-
+    parser.add_argument(
+        "--tensorboard_log",
+        type=str,
+        default="./metanet_sb3_tensorboard/",
+        help="Directory for tensorboard logs",
+    )
+    print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
 
     main(
