@@ -228,8 +228,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--perturb_bc",
-        action="store_true",
-        help="Whether to perturb boundary conditions during training (adds noise and smoothness)",
+        type=lambda x: x.lower() == 'true',
+        default=True,
+        help="Whether to perturb boundary conditions (True/False)",
     )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
