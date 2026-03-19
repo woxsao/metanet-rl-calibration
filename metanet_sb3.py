@@ -89,6 +89,8 @@ def main(
     bc_smoothness=0.97,
     bc_noise_std=0.02,
     perturb_bc=True,
+    n_steps=1024,
+    batch_size=64
 ):
     custom_bounds = None
     if save_dir is not None and os.path.exists(save_dir + "/bounds.json"):
@@ -100,7 +102,7 @@ def main(
         custom_bounds = floatify_bounds(custom_bounds)
         print(custom_bounds)
 
-    n_steps = 2048  # keep total rollout size fixed
+    # n_steps = 1024  # keep total rollout size fixed
     def make_env_fn(bp, ui, cb, bc_noise_std=0.02, bc_smoothness=0.97):
         def _init():
             return make_env(bp, param_update_interval=ui, custom_bounds=cb, bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, perturb_bc=perturb_bc)
@@ -121,7 +123,7 @@ def main(
     #     check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
     lr = 3e-4
     # n_steps = 2048
-    batch_size = 512
+    # batch_size = 64
     n_epochs = 10
     gamma = 0.999
     gae_lambda = 0.95
@@ -232,6 +234,18 @@ if __name__ == "__main__":
         default=True,
         help="Whether to perturb boundary conditions (True/False)",
     )
+    parser.add_argument(
+        "--n_steps",
+        type=int,
+        default=1024,
+        help="Number of steps to run in each environment per update (total rollout size will be"
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=64,
+        help="Batch size for PPO updates",
+    )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
 
@@ -246,4 +260,6 @@ if __name__ == "__main__":
         args.bc_smoothness,
         args.bc_noise_std,
         args.perturb_bc,
+        args.n_steps,
+        args.batch_size
     )
