@@ -11,7 +11,7 @@ import os
 training_metadata = {}
 
 
-def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None):
+def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None, perturb_bc=True):
     rho_hat = np.load(base_path + "/rho_hat.npy")
     q_hat = np.load(base_path + "/q_hat.npy")
     lane_mapping = np.load(base_path + "/lane_mapping.npy")[1:-1]
@@ -62,11 +62,11 @@ def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothnes
         upstream_flow=upstream_flow,
         downstream_density=downstream_density,
         init_traffic_state=init_traffic_state,
-        perturb_bc=True,
         bc_noise_std=bc_noise_std,
         bc_smoothness=bc_smoothness,
         param_update_interval=param_update_interval,
         custom_param_ranges=custom_bounds,
+        perturb_bc=perturb_bc,
     )
     return Monitor(metanet_env)
 
@@ -88,6 +88,7 @@ def main(
     tensorboard_log="./metanet_sb3_tensorboard/",
     bc_smoothness=0.97,
     bc_noise_std=0.02,
+    perturb_bc=True,
 ):
     custom_bounds = None
     if save_dir is not None and os.path.exists(save_dir + "/bounds.json"):
@@ -102,7 +103,7 @@ def main(
     n_steps = 2048 // num_cpus  # keep total rollout size fixed
     def make_env_fn(bp, ui, cb, bc_noise_std=0.02, bc_smoothness=0.97):
         def _init():
-            return make_env(bp, param_update_interval=ui, custom_bounds=cb, bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness)
+            return make_env(bp, param_update_interval=ui, custom_bounds=cb, bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, perturb_bc=perturb_bc)
         return _init
 
     env = SubprocVecEnv([
@@ -225,6 +226,11 @@ if __name__ == "__main__":
         default=0.02,
         help="Standard deviation of noise added to boundary conditions at each timestep",
     )
+    parser.add_argument(
+        "--perturb_bc",
+        action="store_true",
+        help="Whether to perturb boundary conditions during training (adds noise and smoothness)",
+    )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
 
@@ -238,4 +244,5 @@ if __name__ == "__main__":
         args.tensorboard_log,
         args.bc_smoothness,
         args.bc_noise_std,
+        args.perturb_bc,
     )
