@@ -162,7 +162,12 @@ def main(
     training_metadata["gae_lambda"] = gae_lambda
     training_metadata["clip_range"] = clip_range
     training_metadata["network_kwargs"] = network_kwargs
-
+    training_metadata["total_timesteps"] = total_timesteps
+    training_metadata["num_cpus"] = num_cpus
+    training_metadata["param_update_interval"] = update_interval
+    training_metadata["perturb_bc"] = perturb_bc
+    training_metadata["bc_noise_std"] = bc_noise_std
+    training_metadata["bc_smoothness"] = bc_smoothness
     model.learn(total_timesteps=total_timesteps)
 
     # str representation of total_timesteps for filename
