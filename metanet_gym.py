@@ -250,11 +250,11 @@ class METANETGymEnv(gym.Env):
         # Current state: rho, v, q, flow_origin, queue
         current_state = 3 * self.num_segments + 2
         # Ground truth at current timestep: rho_hat, q_hat
-        # current_ground_truth = 2 * self.num_segments
+        current_ground_truth = 2 * self.num_segments
         # Timestep indicator
         timestep_info = 2
 
-        return current_state + timestep_info
+        return current_state + timestep_info + current_ground_truth
 
     def _get_obs(self):
         t = min(self.current_timestep, self.num_timesteps - 1)
@@ -269,8 +269,8 @@ class METANETGymEnv(gym.Env):
                 / self.flow_max,  # current flow_origin (scalar)
                 self.queue[t : t + 1, 0] / self.flow_max,  # current queue (scalar)
                 # Ground truth at current timestep
-                # self.rho_hat[t] / self.rho_max,  # ground truth density
-                # self.q_hat[t] / self.flow_max,  # ground truth flow
+                self.rho_hat[t] / self.rho_max,  # ground truth density
+                self.q_hat[t] / self.flow_max,  # ground truth flow
                 # Timestep indicator
                 np.array([t / self.num_timesteps]),
                 np.array([float(t % self.param_update_interval == 0)]),
