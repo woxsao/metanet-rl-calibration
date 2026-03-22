@@ -281,6 +281,48 @@ class METANETGymEnv(gym.Env):
         obs = np.clip(obs, -5.0, 5.0)
         return obs
 
+    def _scale_action_main_params(self, action):
+        """Scale only the main METANET parameters (tau, K, eta, rho_crit, v_free, a)."""
+        action_dict = {}
+        idx = 0
+
+        for param_name in ["tau", "K", "eta_high", "rho_crit", "v_free", "a"]:
+            low, high = self.param_ranges[param_name]
+            scaled = (action[idx : idx + self.num_segments] + 1.0) / 2.0
+            scaled = scaled * (high - low) + low
+            action_dict[param_name] = scaled.astype(np.float32)
+            idx += self.num_segments
+
+        return action_dict, idx  # return idx so ramp extraction knows where to start
+
+    def _scale_action_ramp_params(self, action, start_idx):
+        """Scale only the ramp parameters (beta, r) — always updated."""
+        action_dict = {}
+        idx = start_idx
+
+        # Beta only for off-ramp segments
+        beta = np.zeros(self.num_segments, dtype=np.float32)
+        off_ramp_indices = np.where(self.off_ramp_mapping_interior > 0)[0]
+        if len(off_ramp_indices) > 0:
+            low, high = self.param_ranges["beta"]
+            scaled = (action[idx : idx + self.num_off_ramp_segments] + 1.0) / 2.0
+            scaled = scaled * (high - low) + low
+            beta[off_ramp_indices] = scaled.astype(np.float32)
+            idx += self.num_off_ramp_segments
+        action_dict["beta"] = beta
+
+        # R only for on-ramp segments
+        r = np.zeros(self.num_segments, dtype=np.float32)
+        on_ramp_indices = np.where(self.on_ramp_mapping_interior > 0)[0]
+        if len(on_ramp_indices) > 0:
+            low, high = self.param_ranges["r"]
+            scaled = (action[idx : idx + self.num_on_ramp_segments] + 1.0) / 2.0
+            scaled = scaled * (high - low) + low
+            r[on_ramp_indices] = scaled.astype(np.float32)
+            idx += self.num_on_ramp_segments
+        action_dict["r"] = r
+
+        return action_dict
     def step(self, action, override_params=None):
         if override_params is not None:
             # DON'T extract timestep here - pass full arrays
@@ -288,7 +330,14 @@ class METANETGymEnv(gym.Env):
         else:
             if self.current_timestep % self.param_update_interval == 0:
                 # Time to update parameters
-                self.current_params = self._scale_action(action)
+                # self.current_params = self._scale_action(action)
+                main_params, ramp_start_idx = self._scale_action_main_params(action)
+                self.current_params = main_params
+            else:
+                ramp_start_idx = 6 * self.num_segments  # where beta and r start in the action vector
+
+            ramp_params = self._scale_action_ramp_params(action, ramp_start_idx)
+            self.current_params.update(ramp_params)
             action_dict = self.current_params
 
         t = self.current_timestep
