@@ -90,8 +90,13 @@ def main(
     bc_noise_std=0.02,
     perturb_bc=True,
     n_steps=1024,
-    batch_size=64
+    batch_size=64,
+    seed=0
 ):
+    np.random.seed(seed)
+    import random
+    random.seed(seed)
+    
     custom_bounds = None
     if save_dir is not None and os.path.exists(save_dir + "/bounds.json"):
         import json
@@ -105,7 +110,11 @@ def main(
     # n_steps = 1024  # keep total rollout size fixed
     def make_env_fn(bp, ui, cb, bc_noise_std=0.02, bc_smoothness=0.97):
         def _init():
-            return make_env(bp, param_update_interval=ui, custom_bounds=cb, bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, perturb_bc=perturb_bc)
+            env = make_env(bp, param_update_interval=ui, custom_bounds=cb, 
+                          bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, 
+                          perturb_bc=perturb_bc)
+            env.reset(seed=seed)
+            return env
         return _init
 
     env = SubprocVecEnv([
@@ -152,9 +161,11 @@ def main(
             #     net_arch=dict(pi=[256, 256], vf=[256, 256])  # CORRECT: just the dict
             # ),
             tensorboard_log=tensorboard_log,
+            seed=seed,
         )
 
     training_metadata["learning_rate"] = lr
+    training_metadata["seed"] = seed
     training_metadata["n_steps"] = n_steps
     training_metadata["batch_size"] = batch_size
     training_metadata["n_epochs"] = n_epochs
@@ -172,11 +183,11 @@ def main(
 
     # str representation of total_timesteps for filename
     if save_dir is not None:
-        model_save_path = f"{save_dir}/model"
-        print(f"Saving model to {model_save_path}...")
-        os.makedirs(save_dir, exist_ok=True)
+        model_save_path = f"{save_dir}/seed_{seed}/model"
+        os.makedirs(f"{save_dir}/seed_{seed}", exist_ok=True)
         model.save(model_save_path)
-        np.savez(f"{save_dir}/training_metadata", **training_metadata)
+        np.savez(f"{save_dir}/seed_{seed}/training_metadata", 
+                **training_metadata)
     else:
         model.save(f"metanet_sb3_ppo_model_{total_timesteps}/model.zip")
         np.savez(
@@ -251,6 +262,12 @@ if __name__ == "__main__":
         default=64,
         help="Batch size for PPO updates",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Seed for random number generator",
+    )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
 
@@ -266,5 +283,6 @@ if __name__ == "__main__":
         args.bc_noise_std,
         args.perturb_bc,
         args.n_steps,
-        args.batch_size
+        args.batch_size,
+        args.seed
     )
