@@ -412,11 +412,8 @@ class METANETGymEnv(gym.Env):
             )
             / (self.v_max + 1e-6)
         )
-        # reward = -(rho_mape + q_mape + v_mape)
-        if self.current_timestep % self.param_update_interval == 0:
-            reward = -(rho_mape + q_mape + v_mape)
-        else:
-            reward = 0.0
+        reward = -(rho_mape + q_mape + v_mape)
+        
         if terminated:
             rho_scale_all = np.maximum(self.rho_hat, 0.1 * self.rho_max)
             q_scale_all = np.maximum(self.q_hat, 0.1 * self.flow_max)
