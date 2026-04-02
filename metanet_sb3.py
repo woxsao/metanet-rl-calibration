@@ -14,7 +14,7 @@ training_metadata = {}
 def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None, perturb_bc=True):
     rho_hat = np.load(base_path + "/rho_hat.npy")
     q_hat = np.load(base_path + "/q_hat.npy")
-    lane_mapping = np.load(base_path + "/lane_mapping.npy")[1:-1]
+    lane_mapping = np.load(base_path + "/lane_mapping.npy")
     off_ramp_mapping = np.load(base_path + "/off_ramp_mapping.npy")
     on_ramp_mapping = np.load(base_path + "/on_ramp_mapping.npy")
 
@@ -33,6 +33,7 @@ def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothnes
         # Keep only interior cells
         rho_hat = rho_hat[:, 1:-1]
         q_hat = q_hat[:, 1:-1]
+        lane_mapping = lane_mapping[1:-1]
 
     # Optional velocity file
     v_hat_path = base_path + "/v_hat.npy"
