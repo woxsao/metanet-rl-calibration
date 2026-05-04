@@ -108,7 +108,7 @@ def main(
         custom_bounds = floatify_bounds(custom_bounds)
         print(custom_bounds)
 
-    # n_steps = 1024  # keep total rollout size fixed
+
     def make_env_fn(bp, ui, cb, bc_noise_std=0.02, bc_smoothness=0.97):
         def _init():
             env = make_env(bp, param_update_interval=ui, custom_bounds=cb, 
@@ -128,12 +128,7 @@ def main(
     )
     os.makedirs(save_path, exist_ok=True)
 
-    # print("Checking environment...")
-    # if hasattr(env, 'envs'):
-    #     check_env(env.envs[0], warn=True)  # check_env needs unwrapped env
     lr = 3e-4
-    # n_steps = 2048
-    # batch_size = 64
     n_epochs = 10
     gamma = 0.999
     gae_lambda = 0.95
@@ -158,9 +153,6 @@ def main(
             gamma=gamma,
             gae_lambda=gae_lambda,
             clip_range=clip_range,
-            # policy_kwargs=dict(
-            #     net_arch=dict(pi=[256, 256], vf=[256, 256])  # CORRECT: just the dict
-            # ),
             tensorboard_log=tensorboard_log,
             seed=seed,
         )

@@ -1,3 +1,8 @@
 *.png
 *.zip
 *.npy
+*.npz
+*.pyc
+.DS_Store
+__pycache__/
+events.*
