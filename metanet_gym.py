@@ -413,6 +413,18 @@ class METANETGymEnv(gym.Env):
             / (self.v_max + 1e-6)
         )
         reward = -(rho_mape + q_mape + v_mape)
+
+        # add penalty for large transitions in parameters (to encourage smoothness)
+        if self.current_timestep > 1:
+            prev_params = self.current_params_prev
+            param_diff = 0.0
+            for key in self.current_params:
+                param_diff += np.mean(
+                    np.abs(self.current_params[key] - prev_params[key])
+                    / (np.maximum(np.abs(prev_params[key]), 1e-6))
+                )
+            reward += -0.1 * param_diff  # weight for smoothness penalty
+        self.current_params_prev = self.current_params.copy()
         
         if terminated:
             rho_scale_all = np.maximum(self.rho_hat, 0.1 * self.rho_max)
