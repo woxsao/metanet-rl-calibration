@@ -11,7 +11,7 @@ import os
 training_metadata = {}
 
 
-def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None, perturb_bc=True):
+def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None, perturb_bc=True, transition_penalty=0.1):
     rho_hat = np.load(base_path + "/rho_hat.npy")
     q_hat = np.load(base_path + "/q_hat.npy")
     lane_mapping = np.load(base_path + "/lane_mapping.npy")
@@ -68,6 +68,7 @@ def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothnes
         param_update_interval=param_update_interval,
         custom_param_ranges=custom_bounds,
         perturb_bc=perturb_bc,
+        transition_penalty=transition_penalty
     )
     return Monitor(metanet_env)
 
@@ -92,7 +93,8 @@ def main(
     perturb_bc=True,
     n_steps=1024,
     batch_size=64,
-    seed=0
+    seed=0,
+    transition_penalty=0.1
 ):
     np.random.seed(seed)
     import random
@@ -261,6 +263,12 @@ if __name__ == "__main__":
         default=0,
         help="Seed for random number generator",
     )
+    parser.add_argument(
+        "--transition_penalty",
+        type=float,
+        default=0.1,
+        help="Penalty for large changes in parameters between updates",
+    )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     args = parser.parse_args()
 
@@ -277,5 +285,6 @@ if __name__ == "__main__":
         args.perturb_bc,
         args.n_steps,
         args.batch_size,
-        args.seed
+        args.seed,
+        args.transition_penalty
     )
