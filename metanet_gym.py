@@ -111,6 +111,7 @@ class METANETGymEnv(gym.Env):
         )
 
         self.transition_penalty = transition_penalty
+        print("Transition penalty:", self.transition_penalty)
 
         # The actual per-parameter ranges live here
         # self.param_ranges = {

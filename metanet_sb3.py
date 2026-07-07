@@ -115,7 +115,7 @@ def main(
         def _init():
             env = make_env(bp, param_update_interval=ui, custom_bounds=cb, 
                           bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, 
-                          perturb_bc=perturb_bc)
+                          perturb_bc=perturb_bc, transition_penalty=transition_penalty)
             env.reset(seed=seed)
             return env
         return _init
