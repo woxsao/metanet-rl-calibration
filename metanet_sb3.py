@@ -270,6 +270,7 @@ if __name__ == "__main__":
         help="Penalty for large changes in parameters between updates",
     )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
+    print(f"Using transition penalty: {parser.parse_args().transition_penalty}")
     args = parser.parse_args()
 
     main(
