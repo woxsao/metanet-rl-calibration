@@ -23,6 +23,7 @@ class METANETGymEnv(gym.Env):
         bc_smoothness=0.95,
         param_update_interval=1,
         custom_param_ranges=None,  # NEW: Allow custom parameter ranges
+        transition_penalty=0.1
     ):
         num_timesteps, num_segments = rho_hat.shape
         print(num_timesteps, num_segments)
@@ -108,6 +109,8 @@ class METANETGymEnv(gym.Env):
             shape=(action_dim,),
             dtype=np.float32,
         )
+
+        self.transition_penalty = transition_penalty
 
         # The actual per-parameter ranges live here
         # self.param_ranges = {
@@ -423,9 +426,9 @@ class METANETGymEnv(gym.Env):
                     np.abs(self.current_params[key] - prev_params[key])
                     / (np.maximum(np.abs(prev_params[key]), 1e-6))
                 )
-            reward += -0.1 * param_diff  # weight for smoothness penalty
+            reward += -1*self.transition_penalty * param_diff  # weight for smoothness penalty
         self.current_params_prev = self.current_params.copy()
-        
+
         if terminated:
             rho_scale_all = np.maximum(self.rho_hat, 0.1 * self.rho_max)
             q_scale_all = np.maximum(self.q_hat, 0.1 * self.flow_max)
