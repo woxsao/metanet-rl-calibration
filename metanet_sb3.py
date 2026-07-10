@@ -278,7 +278,8 @@ if __name__ == "__main__":
         help="Penalty for large changes in parameters across space",
     )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
-    print(f"Using transition penalty: {parser.parse_args().transition_penalty}")
+    print(f"Using time transition penalty: {parser.parse_args().time_transition_penalty}")
+    print(f"Using space transition penalty: {parser.parse_args().space_transition_penalty}")
     args = parser.parse_args()
 
     main(
@@ -295,6 +296,6 @@ if __name__ == "__main__":
         args.n_steps,
         args.batch_size,
         args.seed,
-        args.transition_penalty,
+        args.time_transition_penalty,
         args.space_transition_penalty
     )
