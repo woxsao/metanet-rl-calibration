@@ -11,7 +11,7 @@ import os
 training_metadata = {}
 
 
-def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None, perturb_bc=True, transition_penalty=0.1):
+def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothness=0.97, custom_bounds=None, perturb_bc=True, time_transition_penalty=0.1, space_transition_penalty=0.1):
     rho_hat = np.load(base_path + "/rho_hat.npy")
     q_hat = np.load(base_path + "/q_hat.npy")
     lane_mapping = np.load(base_path + "/lane_mapping.npy")
@@ -68,7 +68,8 @@ def make_env(base_path, param_update_interval=1, bc_noise_std=0.02, bc_smoothnes
         param_update_interval=param_update_interval,
         custom_param_ranges=custom_bounds,
         perturb_bc=perturb_bc,
-        transition_penalty=transition_penalty
+        time_transition_penalty=time_transition_penalty,
+        space_transition_penalty=space_transition_penalty
     )
     return Monitor(metanet_env)
 
@@ -94,7 +95,8 @@ def main(
     n_steps=1024,
     batch_size=64,
     seed=0,
-    transition_penalty=0.1
+    time_transition_penalty=0.1, 
+    space_transition_penalty=0.1
 ):
     np.random.seed(seed)
     import random
@@ -115,7 +117,7 @@ def main(
         def _init():
             env = make_env(bp, param_update_interval=ui, custom_bounds=cb, 
                           bc_noise_std=bc_noise_std, bc_smoothness=bc_smoothness, 
-                          perturb_bc=perturb_bc, transition_penalty=transition_penalty)
+                          perturb_bc=perturb_bc, time_transition_penalty=time_transition_penalty, space_transition_penalty=space_transition_penalty)
             env.reset(seed=seed)
             return env
         return _init
@@ -264,10 +266,16 @@ if __name__ == "__main__":
         help="Seed for random number generator",
     )
     parser.add_argument(
-        "--transition_penalty",
+        "--time_transition_penalty",
         type=float,
         default=0.1,
         help="Penalty for large changes in parameters between updates",
+    )
+    parser.add_argument(
+        "--space_transition_penalty",
+        type=float,
+        default=0.1,
+        help="Penalty for large changes in parameters across space",
     )
     print(f"Using {parser.parse_args().num_cpus} CPUs for training.")
     print(f"Using transition penalty: {parser.parse_args().transition_penalty}")
@@ -287,5 +295,6 @@ if __name__ == "__main__":
         args.n_steps,
         args.batch_size,
         args.seed,
-        args.transition_penalty
+        args.transition_penalty,
+        args.space_transition_penalty
     )

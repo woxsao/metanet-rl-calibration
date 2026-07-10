@@ -23,7 +23,8 @@ class METANETGymEnv(gym.Env):
         bc_smoothness=0.95,
         param_update_interval=1,
         custom_param_ranges=None,  # NEW: Allow custom parameter ranges
-        transition_penalty=0.1
+        time_transition_penalty=0.1,
+        space_transition_penalty=0.1,
     ):
         num_timesteps, num_segments = rho_hat.shape
         print(num_timesteps, num_segments)
@@ -110,8 +111,12 @@ class METANETGymEnv(gym.Env):
             dtype=np.float32,
         )
 
-        self.transition_penalty = transition_penalty
-        print("Transition penalty:", self.transition_penalty)
+        self.time_transition_penalty = time_transition_penalty
+        print("Transition penalty:", self.time_transition_penalty)
+        self.space_transition_penalty = space_transition_penalty
+        self.current_params_prev = None  # To store previous parameters for smoothness penalty
+
+        self.mape_weight = 1.0-self.time_transition_penalty - self.space_transition_penalty
 
         # The actual per-parameter ranges live here
         # self.param_ranges = {
@@ -416,10 +421,10 @@ class METANETGymEnv(gym.Env):
             )
             / (self.v_max + 1e-6)
         )
-        reward = -(rho_mape + q_mape + v_mape)
+        reward = -1 * self.mape_weight * (rho_mape + q_mape + v_mape)/3
 
         # add penalty for large transitions in parameters (to encourage smoothness)
-        if self.current_timestep > 1:
+        if self.current_timestep > 1 and self.current_timestep % self.param_update_interval == 0:
             prev_params = self.current_params_prev
             param_diff = 0.0
             for key in self.current_params:
@@ -427,19 +432,19 @@ class METANETGymEnv(gym.Env):
                     np.abs(self.current_params[key] - prev_params[key])
                     / (np.maximum(np.abs(prev_params[key]), 1e-6))
                 )
-            reward += -1*self.transition_penalty * param_diff  # weight for smoothness penalty
+            reward += -1*self.time_transition_penalty * param_diff  # weight for smoothness penalty
         self.current_params_prev = self.current_params.copy()
 
-        if terminated:
-            rho_scale_all = np.maximum(self.rho_hat, 0.1 * self.rho_max)
-            q_scale_all = np.maximum(self.q_hat, 0.1 * self.flow_max)
-            total_rho_error = np.mean(
-                np.abs(self.rho_pred[:-1, :] - self.rho_hat) / rho_scale_all
-            )
-            total_q_error = np.mean(
-                np.abs(self.q_pred[:-1, :] - self.q_hat) / q_scale_all
-            )
-            reward += -10.0 * (total_rho_error + total_q_error)
+        # add spacial penalty across the spatial dimension
+        if self.current_timestep > 1 and self.current_timestep % self.param_update_interval == 0:
+            param_diff_space = 0.0
+            for key in self.current_params:
+                param_diff_space += np.mean(
+                    np.abs(self.current_params[key][1:] - self.current_params[key][:-1])
+                    / (np.maximum(np.abs(self.current_params[key][:-1]), 1e-6))
+                )
+            reward += -1*self.space_transition_penalty * param_diff_space  # weight for smoothness penalty
+
 
         reward = np.clip(reward, -100.0, 0.0)
 
